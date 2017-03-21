@@ -1,59 +1,81 @@
 from __future__ import unicode_literals
+#https://ffmpeg.org/ - ffmpeg video converter
+#https://pypi.python.org/pypi/ffmpy - ffmpeg python command line wrapper
 import ffmpy
+#https://rg3.github.io/youtube-dl/ - youtubedl video downloader
 import youtube_dl
 import os
 import datetime
 
+#File with the urls of videos to be converted
+url_file = 'urls.txt'
+#Destination folder path, change it to desired path.
+#Windows pattern: 
+#dest_path = 'C:\\Users\\User\\Desktop\\'
+dest_path = os.getcwd()
 
-with open(os.getcwd()+'\\urls.txt') as f:
-    urls = f.readlines()
+if os.path.exists(os.getcwd() + '\\' + url_file):
+    with open(os.getcwd() + '\\' + url_file) as f:
+        urls = f.readlines()
 
-for u in range(0, len(urls)):
-    #with open(os.getcwd()+'\\timestamps.txt') as f:
-     #   timestamps = f.readlines()
+    for u in range(0, len(urls)):
 
-    divisions = []
-    titles = []
+        divisions = []
+        titles = []
 
-    #url = raw_input('Enter the video url')
-    url = urls[u]
+        url = urls[u]
 
-    ydl = youtube_dl.YoutubeDL({'outtmpl': '%(title)s.%(ext)s','format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }]})
-    with ydl:
-        video = ydl.extract_info(
-            url,
-            download=False
-        )
-    timestamps = video['description']
-    timestamps_lines =  timestamps.splitlines()
+        #Downloads information about the video including the video itself
 
-    for i in range(4, len(timestamps_lines)):
-        line_contents = timestamps_lines[i].split()
-        if len(line_contents) > 0:
-            if line_contents[0].isdigit():
-                divisions.append(line_contents[len(line_contents)-1])
-                titles.append('')
-                for j in range(1, (len(line_contents) -1)):
-                    titles[i-4] = titles[i-4] + line_contents[j] + ' '
-                #print (i-3)
-                titles[i - 4] = titles[i - 4][:-1].title()
+        ydl = youtube_dl.YoutubeDL({'outtmpl': '%(title)s.%(ext)s','format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }]})
+        with ydl:
+            video = ydl.extract_info(
+                url,
+                download=True
+            )
 
-    divisions.append(str(datetime.timedelta(seconds=video['duration'])))
-    #print  (video['title']+'.mp3')
-    #print (divisions[len(divisions)-1])
-    if not os.path.exists('C:\\Users\\Victor\\Desktop\\' + video['title']):
-        os.makedirs('C:\\Users\\Victor\\Desktop\\' + video['title'])
-    for i in range(0, (len(divisions) - 1)):
-        print(titles[i]+': '+ divisions[i]+' to ' + divisions[i+1])
-    for i in range(0, (len(divisions) -1)):
-        ff = ffmpy.FFmpeg(
-            inputs={video['title']+'.mp3': None},
-            outputs={'C:\\Users\\Victor\\Desktop\\'+video['title']+'\\'+titles[i]+'.mp3': '-ss '+divisions[i]+' -to '+divisions[i+1]+' -async 1'}
-        )
-        ff.run()
-    os.remove(os.getcwd()+'\\'+video['title']+'.mp3')
+        print  ('\nConverting: ' + video['title'] + '...\n')
+
+        #Converts the full description into usable timestamps, used to split it into single tracks.
+        #This will only work with the pattern used in the "Power Metal Collection" videos but can be changed
+        #to work with other videos.
+
+        timestamps = video['description']
+        timestamps_lines =  timestamps.splitlines()
+
+        for i in range(4, len(timestamps_lines)):
+            line_contents = timestamps_lines[i].split()
+            if len(line_contents) > 0:
+                if line_contents[0].isdigit():
+                    divisions.append(line_contents[len(line_contents)-1])
+                    titles.append('')
+                    for j in range(1, (len(line_contents) -1)):
+                        titles[i-4] = titles[i-4] + line_contents[j] + ' '
+                    titles[i - 4] = titles[i - 4][:-1].title()
+
+        divisions.append(str(datetime.timedelta(seconds=video['duration'])))
+
+        if not os.path.exists(dest_path + video['title']):
+            os.makedirs(dest_path + video['title'])
+
+        for i in range(0, (len(divisions) - 1)):
+            print('\n'+titles[i]+': '+ divisions[i]+' to ' + divisions[i+1])
+
+        #Splits the video into multiple files.
+        for i in range(0, (len(divisions) -1)):
+            ff = ffmpy.FFmpeg(
+                inputs={video['title']+'.mp3': None},
+                outputs={dest_path + video['title']+'\\' + titles[i]+'.mp3': '-ss '+divisions[i]+' -to '+divisions[i+1]+' -async 1'}
+            )
+            ff.run()
+
+        os.remove(os.getcwd()+'\\'+video['title']+'.mp3')
+    print('\n\nFinished converting.')    
+else:
+    print('No url file, please create one named: ' + url_file + ' in the working directory.')
+
