@@ -7,9 +7,9 @@ import youtube_dl
 import os
 import datetime
 
-#File with the urls of videos to be converted
+#File with the urls of videos to be converted placed in the working directory.
 url_file = 'urls.txt'
-#Destination folder path, change it to desired path.
+#Destination folder path, change it to desired path, as default it will use the working directory.
 #Windows pattern: 
 #dest_path = 'C:\\Users\\User\\Desktop\\'
 dest_path = os.getcwd()
