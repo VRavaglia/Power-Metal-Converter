@@ -1,4 +1,4 @@
-#Power Metal Converter#
+# Power Metal Converter
 
 Python script made to donwload, convert and split youtube videos from [this](https://www.youtube.com/playlist?list=PL0hmqRkh_vnVn6i2kUYzvEQvppE2NFdWA) playlist.
 
